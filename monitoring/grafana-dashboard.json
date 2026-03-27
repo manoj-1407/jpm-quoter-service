@@ -1,0 +1,188 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          },
+          "mappings": [
+            { "options": { "0": { "text": "CLOSED" }, "1": { "text": "HALF_OPEN" }, "2": { "text": "OPEN" } }, "type": "value" }
+          ]
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Circuit Breaker · priceFeed",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_state{name=\"priceFeed\"}",
+          "legendFormat": "state",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 5, "w": 10, "x": 4, "y": 0 },
+      "id": 2,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Request Rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"jpm-quoter\"}[1m]))",
+          "legendFormat": "req/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.02 },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 10, "x": 14, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Error Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"jpm-quoter\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{job=\"jpm-quoter\"}[1m]))",
+          "legendFormat": "5xx rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ms",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 7, "w": 14, "x": 0, "y": 5 },
+      "id": 4,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Latency Percentiles",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(http_server_requests_seconds_bucket{job=\"jpm-quoter\"}[1m])) * 1000",
+          "legendFormat": "P50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"jpm-quoter\"}[1m])) * 1000",
+          "legendFormat": "P95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(http_server_requests_seconds_bucket{job=\"jpm-quoter\"}[1m])) * 1000",
+          "legendFormat": "P99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 7, "w": 10, "x": 14, "y": 5 },
+      "id": 5,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "HikariCP Connection Pool",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{pool=\"HikariPool-1\"}",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "hikaricp_connections_idle{pool=\"HikariPool-1\"}",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "hikaricp_connections_pending{pool=\"HikariPool-1\"}",
+          "legendFormat": "pending",
+          "refId": "C"
+        },
+        {
+          "expr": "hikaricp_connections_max{pool=\"HikariPool-1\"}",
+          "legendFormat": "max",
+          "refId": "D"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "tags": ["jpm-quoter", "sentinel", "k8s"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource",
+        "label": "Datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "JPM Quoter — Sentinel",
+  "uid": "sentinel-quoter-v1",
+  "version": 1
+}

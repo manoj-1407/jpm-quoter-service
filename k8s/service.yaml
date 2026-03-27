@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: quoter-svc
+  namespace: quoter
+  labels:
+    app: jpm-quoter
+spec:
+  selector:
+    app: jpm-quoter
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

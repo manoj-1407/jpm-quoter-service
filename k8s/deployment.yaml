@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jpm-quoter
+    version: '1.0'
+  name: jpm-quoter
+  namespace: quoter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jpm-quoter
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: '8080'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: jpm-quoter
+        version: '1.0'
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: quoter-config
+        - secretRef:
+            name: quoter-secrets
+        image: jpm-quoter:latest
+        imagePullPolicy: Never
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        name: quoter
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        startupProbe:
+          failureThreshold: 60
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          periodSeconds: 5
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /app/logs
+          name: logs
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: quoter-sa
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: tmp
+      - emptyDir: {}
+        name: logs

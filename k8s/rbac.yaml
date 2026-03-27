@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quoter-sa
+  namespace: quoter
+  labels:
+    app: jpm-quoter
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quoter-role
+  namespace: quoter
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["quoter-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quoter-rb
+  namespace: quoter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: quoter-role
+subjects:
+  - kind: ServiceAccount
+    name: quoter-sa
+    namespace: quoter

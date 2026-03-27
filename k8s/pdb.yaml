@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quoter-pdb
+  namespace: quoter
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: jpm-quoter

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel
+  namespace: quoter
+  labels:
+    app: sentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel
+  template:
+    metadata:
+      labels:
+        app: sentinel
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
+      containers:
+        - name: sentinel
+          image: sentinel-ui:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-svc
+  namespace: quoter
+  labels:
+    app: sentinel
+spec:
+  selector:
+    app: sentinel
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: quoter
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: quoterdb
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: quoter-secrets
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: quoter-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false   # postgres needs to write
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "quoter", "-d", "quoterdb"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-pvc

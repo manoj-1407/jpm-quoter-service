@@ -1,0 +1,70 @@
+# Default deny all ingress and egress in quoter namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: quoter
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Allow quoter app to receive HTTP from traefik ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-quoter
+  namespace: quoter
+spec:
+  podSelector:
+    matchLabels:
+      app: jpm-quoter
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 8080
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+# Allow quoter to reach postgres, kafka, and DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-quoter-egress
+  namespace: quoter
+spec:
+  podSelector:
+    matchLabels:
+      app: jpm-quoter
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

@@ -1,0 +1,35 @@
+# Java
+target/
+*.class
+*.jar
+!**/src/main/**
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+.classpath
+.project
+.settings/
+
+# Env / secrets
+.env
+*.env
+.env.*
+k8s/secret-template.yaml
+
+# Frontend
+sentinel-ui/node_modules/
+sentinel-ui/dist/
+sentinel-ui/.env
+sentinel-ui/*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

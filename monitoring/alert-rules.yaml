@@ -1,0 +1,98 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: jpm-quoter-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom
+spec:
+  groups:
+    - name: circuit-breaker
+      interval: 15s
+      rules:
+        - alert: CircuitBreakerOpen
+          expr: resilience4j_circuitbreaker_state{name="priceFeed"} == 2
+          for: 30s
+          labels:
+            severity: critical
+            app: jpm-quoter
+          annotations:
+            summary: "Circuit breaker OPEN: {{ $labels.name }}"
+            description: >
+              Circuit breaker {{ $labels.name }} has been OPEN for > 30s.
+              Pod: {{ $labels.pod }}. Downstream service is unavailable.
+            runbook: "Check /actuator/circuitbreakers and downstream price service logs."
+
+        - alert: CircuitBreakerHalfOpen
+          expr: resilience4j_circuitbreaker_state{name="priceFeed"} == 1
+          for: 60s
+          labels:
+            severity: warning
+            app: jpm-quoter
+          annotations:
+            summary: "Circuit breaker HALF_OPEN for 60s: {{ $labels.name }}"
+            description: "Recovery probe is taking unusually long. Check downstream."
+
+    - name: latency
+      interval: 30s
+      rules:
+        - alert: HighP99Latency
+          expr: >
+            histogram_quantile(0.99,
+              rate(http_server_requests_seconds_bucket{
+                job="jpm-quoter", uri!~"(/actuator.*|/favicon.ico)"
+              }[5m])
+            ) > 1.0
+          for: 2m
+          labels:
+            severity: warning
+            app: jpm-quoter
+          annotations:
+            summary: "P99 latency > 1s on {{ $labels.uri }}"
+            description: "P99 latency is {{ $value | humanizeDuration }} on {{ $labels.uri }}."
+
+    - name: errors
+      interval: 30s
+      rules:
+        - alert: HighErrorRate
+          expr: >
+            (
+              sum(rate(http_server_requests_seconds_count{
+                job="jpm-quoter", status=~"5.."
+              }[5m]))
+              /
+              sum(rate(http_server_requests_seconds_count{job="jpm-quoter"}[5m]))
+            ) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+            app: jpm-quoter
+          annotations:
+            summary: "Error rate > 5%"
+            description: "5xx error rate is {{ $value | humanizePercentage }}."
+
+    - name: pods
+      rules:
+        - alert: QuoterPodCrashLooping
+          expr: >
+            rate(kube_pod_container_status_restarts_total{
+              namespace="quoter", container="quoter"
+            }[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            app: jpm-quoter
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash-looping"
+
+    - name: hikari
+      rules:
+        - alert: HikariPoolExhausted
+          expr: >
+            hikaricp_connections_pending{namespace="quoter"} > 3
+          for: 1m
+          labels:
+            severity: warning
+            app: jpm-quoter
+          annotations:
+            summary: "HikariCP connection pool has {{ $value }} pending acquisitions"
