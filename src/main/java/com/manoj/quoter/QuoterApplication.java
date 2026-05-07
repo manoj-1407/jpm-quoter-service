@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration.class
+})
 @EnableCaching
 @EnableAsync
 public class QuoterApplication {

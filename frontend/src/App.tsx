@@ -6,7 +6,7 @@ import RequestChart   from './components/RequestChart'
 import TokenGenerator from './components/TokenGenerator'
 import QuoteTerminal  from './components/QuoteTerminal'
 import HealthPanel    from './components/HealthPanel'
-import { loadToken, getActuator } from './api/client'
+import { loadToken, getActuator, BASE } from './api/client'
 
 type CBState = 'CLOSED' | 'OPEN' | 'HALF_OPEN' | 'UNKNOWN'
 
@@ -100,7 +100,7 @@ export default function App() {
         <div style={{ marginTop:32, paddingTop:16, borderTop:'1px solid var(--border)',
                       display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--muted)' }}>
           <span>Java 17 / Spring Boot 3.2.5 / PostgreSQL 15 / Apache Kafka / Resilience4j</span>
-          <a href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer"
+          <a href={`${BASE}/swagger-ui.html`} target="_blank" rel="noreferrer"
              style={{ color:'var(--amber)', textDecoration:'none' }}>
             Swagger UI
           </a>

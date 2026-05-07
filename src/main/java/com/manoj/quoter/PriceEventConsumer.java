@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true")
 public class PriceEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(PriceEventConsumer.class);

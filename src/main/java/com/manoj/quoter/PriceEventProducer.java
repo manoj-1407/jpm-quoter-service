@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true")
 public class PriceEventProducer {
 
     private static final Logger log   = LoggerFactory.getLogger(PriceEventProducer.class);

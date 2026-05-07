@@ -41,6 +41,7 @@ spring:
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=5s,recordStats
   kafka:
+    enabled: ${KAFKA_ENABLED:false}
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     listener:
       missing-topics-fatal: false
@@ -86,6 +87,14 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+      group:
+        readiness:
+          include: db
+  health:
+    redis:
+      enabled: false
+    kafka:
+      enabled: false
   metrics:
     distribution:
       percentiles-histogram:
@@ -120,6 +129,10 @@ cors:
 
 rate-limit:
   requests-per-minute: 60
+
+app:
+  infrastructure:
+    mock: ${MOCK_INFRA:true}
 
 logging:
   level:
